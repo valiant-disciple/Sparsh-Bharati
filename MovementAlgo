@@ -1,0 +1,87 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Dec 20 10:25:47 2023
+
+@author: Asus
+"""
+
+SUB_COUNT_X = 1
+SUB_COUNT_Y = 1
+LINE_COUNT = 0
+WORD_COUNT = 0
+DX_INTRA = 0
+DX_WORD = 0
+DY_INTRA = 0
+DY_LINE = 0
+DY_Z = 0
+
+X = 0 
+Y = 0 
+Z = 0
+Z_CURR = 0
+
+PROTOCOL = []
+
+
+def database_retriever():
+    
+def subline(line):
+    if SUB_COUNT_Y % 2 != 0:
+        y_odd_calibrate()
+        while WORD_COUNT <=8:
+            if SUB_COUNT_X > 5:
+                new_word_calibrate(X, Y, Z)
+            y_odd_move(X, Y, Z, Z_NEW)
+        
+    else:
+        y_even_calibrate()
+        while WORD_COUNT <=8:
+            if SUB_COUNT_X > 5:
+                new_word_calibrate(X, Y, Z)
+            y_even_move()
+    new_line_calibrate(X, Y, Z)
+        
+        
+
+def new_word_calibrate(X, Y, Z):
+    WORD_COUNT += 1
+    SUB_COUNT_X = 1
+    SUB_COUNT_Y = 1
+    '''(X, Y, Z) --> (WORD_COUNT.(4.DX_INTRA) + WORD_COUNT.DX_INTER, Y, 3)'''
+    
+def new_line_calibrate(X, Y, Z):
+    WORD_COUNT = 0
+    LINE_COUNT += 1
+    SUB_COUNT_X = 1
+    SUB_COUNT_Y = 1
+    '''(X, Y, Z) --> (0, LINE_COUNT.(4.DY_INTRA) + LINE_COUNT.DX_INTER + (2 - Z_CURR).DY_Z, 3)'''
+    
+def y_odd_calibrate(X, Y, Z):
+    '''(X, Y, Z) --> (0 + DX_INTRA, Y + (0 - Z_CURR).DY_Z, 3)'''
+
+def y_even_calibrate(X, Y, Z):
+    '''(X, Y, Z) --> (0, Y + DY_INTRA + (2 - Z_CURR).DY_Z, 2)'''
+
+def y_odd_move(X, Y, Z, Z_NEW):
+    '''(X, Y, Z) ---> (X + 2.DX_INTRA, Y, Z_NEW)'''
+    SUB_COUNT_X += 2
+    
+def y_even_move(X, Y, Z):
+    if SUB_COUNT_X % 2 == 0:
+        '''(X, Y, Z) --> (X + DX_INTRA, Y + (1 - Z_CURR).DY_Z, Z_NEW)'''
+    else:
+        '''(X, Y, Z) --> (X + DX_INTRA, Y + (2 - Z_CURR).DY_Z, Z_NEW)'''
+    SUB_COUNT_X +=1
+        
+def main():
+    lines = database_retriever()
+    while LINE_COUNT <= 14:
+        for line in lines:
+            for i in range(5):
+                i = SUB_COUNT_Y
+                subline(line)
+            SUB_COUNT_Y = 1
+        LINE_COUNT += 1
+    
+    
+    
