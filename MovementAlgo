@@ -5,83 +5,182 @@ Created on Wed Dec 20 10:25:47 2023
 @author: Asus
 """
 
+import matplotlib.pyplot as plt 
+import numpy as np
+
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+
+major_ticks = np.arange(0, 100, 5)
+minor_ticks = np.arange(0, 100, 1)
+
+ax.set_xticks(major_ticks)
+ax.set_xticks(minor_ticks, minor=True)
+ax.set_yticks(major_ticks)
+ax.set_yticks(minor_ticks, minor=True)
+ax.grid(which='both')
+
+ax.invert_yaxis()
+
+plt.ion()
+plt.plot()
+plt.title("Sparsh Bharati Plotter")
+
 SUB_COUNT_X = 1
 SUB_COUNT_Y = 1
 LINE_COUNT = 0
 WORD_COUNT = 0
 DX_INTRA = 0
-DX_WORD = 0
+DX_INTER = 0
 DY_INTRA = 0
 DY_LINE = 0
 DY_Z = 0
 
 X = 0 
 Y = 0 
-Z = 0
-Z_CURR = 0
+Z_NEW = 2
+Z_CURR = 2
 
 PROTOCOL = []
 
 
 def database_retriever():
+    test = ((('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')))
+    return np.asarray(test)
     
 def subline(line):
+    global SUB_COUNT_X, WORD_COUNT,SUB_COUNT_Y
     if SUB_COUNT_Y % 2 != 0:
         y_odd_calibrate()
-        while WORD_COUNT <=8:
+        for i in range(8):
+            WORD_COUNT = i + 1
+            subword = line[i]
+            y_odd_move(subword)
             if SUB_COUNT_X > 5:
-                new_word_calibrate(X, Y, Z)
-            y_odd_move(X, Y, Z, Z_NEW)
+                new_word_calibrate()
+                break
         
     else:
         y_even_calibrate()
-        while WORD_COUNT <=8:
+        for i in range(8):
+            WORD_COUNT = i + 1
+            subword = line[i]
+            y_even_move(subword)
             if SUB_COUNT_X > 5:
-                new_word_calibrate(X, Y, Z)
-            y_even_move()
-    new_line_calibrate(X, Y, Z)
+                new_word_calibrate()
+                break
+
+    if SUB_COUNT_Y < 5:
+        new_subline_calibrate()
+    else:
+        new_line_calibrate()
+
         
         
 
-def new_word_calibrate(X, Y, Z):
-    WORD_COUNT += 1
+def new_word_calibrate():
+    global Y, X, Z_NEW, Z_CURR, SUB_COUNT_X, DX_INTRA, DX_INTER
     SUB_COUNT_X = 1
-    SUB_COUNT_Y = 1
-    '''(X, Y, Z) --> (WORD_COUNT.(4.DX_INTRA) + WORD_COUNT.DX_INTER, Y, 3)'''
+    '''(X, Y, Z) --> (WORD_COUNT.(4.DX_INTRA) + WORD_COUNT.DX_INTER, Y, 'o')'''
+    X = WORD_COUNT*(4*DX_INTRA) + WORD_COUNT*DX_INTER
+    Y = Y
+    Z_CURR = Z_NEW
     
-def new_line_calibrate(X, Y, Z):
+def new_line_calibrate():
+    global Y, X, Z_NEW, Z_CURR, WORD_COUNT, SUB_COUNT_X, SUB_COUNT_Y
     WORD_COUNT = 0
     LINE_COUNT += 1
     SUB_COUNT_X = 1
     SUB_COUNT_Y = 1
-    '''(X, Y, Z) --> (0, LINE_COUNT.(4.DY_INTRA) + LINE_COUNT.DX_INTER + (2 - Z_CURR).DY_Z, 3)'''
+    '''(X, Y, Z) --> (0, LINE_COUNT.(4.DY_INTRA) + LINE_COUNT.DX_INTER + (2 - Z_CURR).DY_Z, 'o')'''
+    X = 0
+    Y = LINE_COUNT*(4*DY_INTRA) + LINE_COUNT*DX_INTER + (2 - Z_CURR)*DY_Z
+    Z_CURR = Z_NEW
     
-def y_odd_calibrate(X, Y, Z):
-    '''(X, Y, Z) --> (0 + DX_INTRA, Y + (0 - Z_CURR).DY_Z, 3)'''
+def new_subline_calibrate():
+    global Y, X, Z_NEW, Z_CURR, SUB_COUNT_X, SUB_COUNT_Y, WORD_COUNT
+    SUB_COUNT_X = 1
+    WORD_COUNT = 0
+    '''(X, Y, Z) --> (0, LINE_COUNT.(4.DY_INTRA) + LINE_COUNT.DX_INTER + (2 - Z_CURR).DY_Z + SUB_COUNT_Y.DY_INTER, 'o')'''
+    SUB_COUNT_Y += 1
+    X = 0
+    Y = LINE_COUNT*(4*DY_INTRA) + LINE_COUNT*DX_INTER + (2 - Z_CURR)*DY_Z + SUB_COUNT_Y*DY_INTER
+    Z_CURR = Z_NEW
+    
+def y_odd_calibrate():
+    '''(X, Y, Z) --> (0 + DX_INTRA, Y + (0 - Z_CURR).DY_Z, 'o')'''
+    global Y, X, Z_NEW, Z_CURR
+    X = DX_INTRA
+    Y = Y + (0 - Z_CURR)*DY_Z
+    Z_NEW = Z_CURR
 
-def y_even_calibrate(X, Y, Z):
+def y_even_calibrate():
     '''(X, Y, Z) --> (0, Y + DY_INTRA + (2 - Z_CURR).DY_Z, 2)'''
+    global X, Y, Z_CURR, Z_NEW
+    X = 0
+    Y = Y + DY_INTRA + (2 - Z_CURR)*DY_Z
+    Z_CURR = Z_NEW
 
-def y_odd_move(X, Y, Z, Z_NEW):
+def y_odd_move(subword):
+    global X,Y,Z_CURR, Z_NEW, SUB_COUNT_X
+    while SUB_COUNT_X <= 5:
+        Z = subword[SUB_COUNT_X - 1]
+        if Z != 'o':
+            Z_NEW = int(Z)
+            z_actuate(Z_NEW)
     '''(X, Y, Z) ---> (X + 2.DX_INTRA, Y, Z_NEW)'''
+    X = X + 2*DX_INTRA
+    Y = Y
+    Z_CURR = Z_NEW
     SUB_COUNT_X += 2
     
-def y_even_move(X, Y, Z):
+def y_even_move(subword):
+    global X, Y, Z_CURR, Z_NEW, SUB_COUNT_X
+    while SUB_COUNT_X <= 5:
+        Z = subword[SUB_COUNT_X - 1]
+        if Z != 'o':
+            Z_NEW = int(Z)
+            z_actuate(Z_NEW)
     if SUB_COUNT_X % 2 == 0:
         '''(X, Y, Z) --> (X + DX_INTRA, Y + (1 - Z_CURR).DY_Z, Z_NEW)'''
+        X = X + DX_INTRA
+        Y = Y + (1 - Z_CURR)*DY_Z
+        Z_CURR = Z_NEW
     else:
         '''(X, Y, Z) --> (X + DX_INTRA, Y + (2 - Z_CURR).DY_Z, Z_NEW)'''
+        X = X + DX_INTRA
+        Y = Y + (2 - Z_CURR)*DY_Z
+        Z_CURR = Z_NEW
     SUB_COUNT_X +=1
+
+def z_actuate():
+    global Z_NEW
+    if Z_NEW == 0:
+        pass
+    elif Z_NEW == 1:
+        pass
+    elif Z_NEW == 2:
+        pass
         
 def main():
-    lines = database_retriever()
-    while LINE_COUNT <= 14:
-        for line in lines:
-            for i in range(5):
-                i = SUB_COUNT_Y
-                subline(line)
-            SUB_COUNT_Y = 1
-        LINE_COUNT += 1
+    # incorporate multiple lines
+    line = database_retriever()
+    # while LINE_COUNT <= 14:
+    #     for line in lines:
+    #         for i in range(5):
+    #             i = SUB_COUNT_Y
+    #             subline(line)
+    #         SUB_COUNT_Y = 1
+    #     LINE_COUNT += 1
+    
+    for i in range(5):
+        SUB_COUNT_Y = i + 1
+        subline1 = line[:,i]
+        subline(subline1)
+
+
+
+main()
     
     
     
