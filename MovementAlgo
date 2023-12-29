@@ -4,36 +4,18 @@ Created on Wed Dec 20 10:25:47 2023
 
 @author: Asus
 """
-
-# import matplotlib.pyplot as plt 
-# import numpy as np
-
-# fig = plt.figure()
-# ax = fig.add_subplot(1, 1, 1)
-
-# major_ticks = np.arange(0, 100, 5)
-# minor_ticks = np.arange(0, 100, 1)
-
-# ax.set_xticks(major_ticks)
-# ax.set_xticks(minor_ticks, minor=True)
-# ax.set_yticks(major_ticks)
-# ax.set_yticks(minor_ticks, minor=True)
-# ax.grid(which='both')
-
-# ax.invert_yaxis()
-
-# plt.ion()
-# plt.plot()
-# plt.title("Sparsh Bharati Plotter")
+from serial_module import instructions_send
+import numpy as np
 
 SUB_COUNT_X = 1
 SUB_COUNT_Y = 1
 LINE_COUNT = 0
 WORD_COUNT = 0
+
 DX_INTRA = 0
 DX_INTER = 0
+DY_INTER = 0
 DY_INTRA = 0
-DY_LINE = 0
 DY_Z = 0
 
 X = 0 
@@ -41,8 +23,7 @@ Y = 0
 Z_NEW = 2
 Z_CURR = 2
 
-PROTOCOL = []
-
+PROTOCOL = ''
 
 def database_retriever():
     test = ((('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')))
@@ -70,9 +51,6 @@ def subline(line):
         new_subline_calibrate()
     else:
         new_line_calibrate()
-
-        
-        
 
 def new_word_calibrate():
     global Y, X, Z_NEW, Z_CURR, SUB_COUNT_X, DX_INTRA, DX_INTER, WORD_COUNT
@@ -162,6 +140,8 @@ def main():
             SUB_COUNT_Y = i + 1
             subline1 = line[:,i]
             subline(subline1)
+        instructions_send(PROTOCOL)
+        PROTOCOL = ''
 
 main()
     
