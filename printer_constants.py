@@ -1,0 +1,5 @@
+DX_INTRA = 0
+DX_INTER = 0
+DY_INTER = 0
+DY_INTRA = 0
+DY_Z = 0
