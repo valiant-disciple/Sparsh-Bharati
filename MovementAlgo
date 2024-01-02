@@ -4,19 +4,23 @@ Created on Wed Dec 20 10:25:47 2023
 
 @author: Asus
 """
-from serial_module import instructions_send
 import numpy as np
+from math import log10, floor
+
+import time
+from serial_module import instruction_send
+
 
 SUB_COUNT_X = 1
 SUB_COUNT_Y = 1
 LINE_COUNT = 0
 WORD_COUNT = 0
 
-DX_INTRA = 0
-DX_INTER = 0
-DY_INTER = 0
-DY_INTRA = 0
-DY_Z = 0
+DX_INTRA = 2.836
+DX_INTER = 6.050
+DY_INTER = 6.050
+DY_INTRA = 2.836
+DY_Z = 35.178
 
 X = 0 
 Y = 0 
@@ -26,7 +30,7 @@ Z_CURR = 2
 PROTOCOL = ''
 
 def database_retriever():
-    test = ((('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')))
+    test = (((('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o'))),((('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o')),(('o',0,'o','o','o'),('o','o',2,'o',2),('o','o','o',0,'o'),(2,'o','o',1,'o'),('o','o','o','o','o'))))
     return np.asarray(test)
     
 def subline(line):
@@ -34,18 +38,19 @@ def subline(line):
     if SUB_COUNT_Y % 2 != 0:
         y_odd_calibrate()
         for i in range(8):
+            word = line[WORD_COUNT - 1]
             WORD_COUNT = i + 1
-            subword = line[i]
-            y_odd_move(subword)
-            new_word_calibrate()
+            if WORD_COUNT < 8:
+                new_word_calibrate()
         
     else:
         y_even_calibrate()
         for i in range(8):
+            word = line[WORD_COUNT - 1]
             WORD_COUNT = i + 1
-            subword = line[i]
-            y_even_move(subword)
-            new_word_calibrate()
+            y_even_move(word)
+            if WORD_COUNT < 8:
+                new_word_calibrate()
 
     if SUB_COUNT_Y < 5:
         new_subline_calibrate()
@@ -63,36 +68,32 @@ def new_word_calibrate():
 def new_line_calibrate():
     global Y, X, Z_NEW, Z_CURR, WORD_COUNT, SUB_COUNT_X, SUB_COUNT_Y, LINE_COUNT, DY_INTER
     WORD_COUNT = 0
-    LINE_COUNT += 1
     SUB_COUNT_X = 1
-    SUB_COUNT_Y = 1
     '''(X, Y, Z) --> (0, LINE_COUNT.(4.DY_INTRA) + LINE_COUNT.DY_INTER + (2 - Z_CURR).DY_Z, 'o')'''
     X = 0
-    Y = LINE_COUNT*(4*DY_INTRA) + LINE_COUNT*DY_INTER + (2 - Z_CURR)*DY_Z
-    Z_CURR = Z_NEW
+    Y = LINE_COUNT*(4*DY_INTRA) + LINE_COUNT*DY_INTER 
+    Z_CURR = 2
     
 def new_subline_calibrate():
     global Y, X, Z_NEW, Z_CURR, SUB_COUNT_X, SUB_COUNT_Y, WORD_COUNT
     SUB_COUNT_X = 1
-    WORD_COUNT = 0
     '''(X, Y, Z) --> (0, LINE_COUNT.(4.DY_INTRA) + LINE_COUNT.DY_INTER + (2 - Z_CURR).DY_Z + SUB_COUNT_Y.DY_INTER, 'o')'''
     X = 0
-    Y = LINE_COUNT*(4*DY_INTRA) + LINE_COUNT*DX_INTER + (2 - Z_CURR)*DY_Z + SUB_COUNT_Y*DY_INTRA
-    SUB_COUNT_Y += 1
-    Z_CURR = Z_NEW
+    Y = LINE_COUNT*(4*DY_INTRA) + LINE_COUNT*DX_INTER + SUB_COUNT_Y*DY_INTRA
+    Z_CURR = 2
     
 def y_odd_calibrate():
     '''(X, Y, Z) --> (0 + DX_INTRA, Y + (0 - Z_CURR).DY_Z, 'o')'''
     global Y, X, Z_NEW, Z_CURR
     X = DX_INTRA
-    Y = Y + (0 - Z_CURR)*DY_Z
+    Y = Y + (Z_CURR - 0)*DY_Z
     Z_NEW = Z_CURR
 
 def y_even_calibrate():
     '''(X, Y, Z) --> (0, Y + DY_INTRA + (2 - Z_CURR).DY_Z, 2)'''
     global X, Y, Z_CURR, Z_NEW
     X = 0
-    Y = Y + DY_INTRA + (2 - Z_CURR)*DY_Z
+    Y = Y + (Z_CURR - 2)*DY_Z
     Z_CURR = Z_NEW
 
 def y_odd_move(subword):
@@ -101,7 +102,7 @@ def y_odd_move(subword):
         Z = subword[SUB_COUNT_X - 1]
         if Z != 'o':
             Z_NEW = int(Z)
-            z_actuate(Z_NEW)
+            z_actuate()
         X = X + 2*DX_INTRA
         Y = Y
         Z_CURR = Z_NEW
@@ -114,36 +115,62 @@ def y_even_move(subword):
         Z = subword[SUB_COUNT_X - 1]
         if Z != 'o':
             Z_NEW = int(Z)
-            z_actuate(Z_NEW)
-    if SUB_COUNT_X % 2 == 0:
-        '''(X, Y, Z) --> (X + DX_INTRA, Y + (1 - Z_CURR).DY_Z, Z_NEW)'''
-        X = X + DX_INTRA
-        Y = Y + (1 - Z_CURR)*DY_Z
-        Z_CURR = Z_NEW
-    else:
-        '''(X, Y, Z) --> (X + DX_INTRA, Y + (2 - Z_CURR).DY_Z, Z_NEW)'''
-        X = X + DX_INTRA
-        Y = Y + (2 - Z_CURR)*DY_Z
-        Z_CURR = Z_NEW
-    SUB_COUNT_X += 1
+            z_actuate()
+        if SUB_COUNT_X % 2 == 0:
+            '''(X, Y, Z) --> (X + DX_INTRA, Y + (1 - Z_CURR).DY_Z, Z_NEW)'''
+            X = X + DX_INTRA
+            Y = Y + (Z_CURR - 1)*DY_Z
+            Z_CURR = Z_NEW
+        else:
+            '''(X, Y, Z) --> (X + DX_INTRA, Y + (2 - Z_CURR).DY_Z, Z_NEW)'''
+            X = X + DX_INTRA
+            Y = Y + (Z_CURR - 2)*DY_Z
+            Z_CURR = Z_NEW
+        SUB_COUNT_X += 1
+
 
 def z_actuate():
     global Z_NEW, X, Y, PROTOCOL
-    PROTOCOL += ',{},{},{}'.format(X, Y, Z_NEW)
+    if Z_NEW == 0:
+        PROTOCOL += '{}{}100'.format(format_number(X),format_number(Y))
+    if Z_NEW == 1:
+        PROTOCOL += '{}{}010'.format(format_number(X),format_number(Y))
+    if Z_NEW == 2:
+        PROTOCOL += '{}{}001'.format(format_number(X),format_number(Y))
+
+    # while True:
+    #     ack_bit = serial_module.ack
+    #     if ack_bit:
+    #         print(PROTOCOL+'\n')
+    #         PROTOCOL = ''
+    #         break
+    print(PROTOCOL)
+    PROTOCOL = ''
+    
+
+def format_number(number):
+    if number == 0:
+        return '000000'
+    else:
+        dec = format(number,'.3f')
+        curr_len = len(dec) - 1
+        if 0.1 <= number < 1:
+            return (7-curr_len)*'0' + str(int(1000*float(dec)))
+        elif 0.01 <= number < 0.1:
+            return (8-curr_len)*'0' + str(int(1000*float(dec)))
+        else:
+            return (6-curr_len)*'0' + str(int(1000*float(dec)))
         
+
 def main():
-    global SUB_COUNT_Y
+    global SUB_COUNT_Y, PROTOCOL, LINE_COUNT
     lines = database_retriever()
-    for j in range(14):
+    for j in range(len(lines)):
         line = lines[j]
+        LINE_COUNT = j 
         for i in range(5):
             SUB_COUNT_Y = i + 1
             subline1 = line[:,i]
             subline(subline1)
-        instructions_send(PROTOCOL)
-        PROTOCOL = ''
-
+            
 main()
-    
-    
-    
